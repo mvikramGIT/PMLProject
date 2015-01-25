@@ -6,7 +6,7 @@ output: html_document
 
 First we read the train and test data files. For preprocessing, to minimize the number of predictors we identify the near zero variance variables and remove them. Next we notice that many columns have several NAs. After inspection we notice that these columns have more than 90% value as NA. So we filter these out. We also remove the first few columns X, timestamp etc since they dont contribute to predition. At this point we extract the same columns (except 'Classe') from the test dataset for prediction later. 
 
-```{r, eval=FALSE}
+```{r}
 library(caret)
 train <- read.csv("pml-training.csv", header = TRUE, stringsAsFactors = TRUE)
 test <- read.csv("pml-testing.csv", header = TRUE, stringsAsFactors = TRUE)
@@ -25,7 +25,7 @@ In this phase we segment the train dataset for training and testing (75%-25%). H
 
 Finally, in the last part I use this model to predict the test values for submission. After submission I realized it made a 20/20 prediction!
 
-```{r, eval=FALSE}
+```{r, results='markup'}
 intrain2 <- createDataPartition(y = train2$classe, p = 0.75, list = FALSE)
 mtrain <- train2[intrain2,] # Model train set
 mtest <- train2[-intrain2,] # Model test set
@@ -35,6 +35,5 @@ fit <- train(classe ~ ., data = mtrain, method ="rf", trControl = myControl)
 
 pred1 <- predict(fit, mtest)
 confusionMatrix(pred1,mtest$classe)
-sum(pred1 == train2$classe)/nrow(train2)
 pred2  <- predict(fit, test2)
 ```
