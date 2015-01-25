@@ -1,0 +1,40 @@
+---
+title: "Practical Machine Learning Project"
+output: html_document
+---
+### Data analysis and preprocessing:
+
+First we read the train and test data files. For preprocessing, to minimize the number of predictors we identify the near zero variance variables and remove them. Next we notice that many columns have several NAs. After inspection we notice that these columns have more than 90% value as NA. So we filter these out. We also remove the first few columns X, timestamp etc since they dont contribute to predition. At this point we extract the same columns (except 'Classe') from the test dataset for prediction later. 
+
+```{r, eval=FALSE}
+library(caret)
+train <- read.csv("pml-training.csv", header = TRUE, stringsAsFactors = TRUE)
+test <- read.csv("pml-testing.csv", header = TRUE, stringsAsFactors = TRUE)
+nsv <- nearZeroVar(train, saveMetrics = TRUE)
+train2 <- train[,names(train)[!nsv$nzv]] # Remove near zero variables
+
+# Noticing that many values are NA, remove columns with more than 90% NA
+train2 <- train2[,colSums(is.na(train2))<0.9*nrow(train2)]
+train2 <- train2[,6:59] # Remove the first columns of X, names, timestamp etc
+test2 <- test[,names(train2)[1:53]] # Keep the same columns as train except 'classe'
+```
+
+### Model selection and cross-validation
+
+In this phase we segment the train dataset for training and testing (75%-25%). Here we have to select cross-validation methods and the fitting algorithm. For the fitting algorithm I tried several including glm, gbm, rpart and rf. For the cross-validation I inlcluded k-fold default within 'train' function, however this took a long time to evaluate especially for glm and gbm models. Eventually I settled on random forest (rf) method and varied several cross validation programs. Among many the default k-fold 10 , oob with number =10 and number =3 gave good results. The expected accuracy was 99.6%. Once again due to computational time constraints I picked the 'oob' method with number = 3. This ran reasonably fast without a significant drop in the accuracy, giving around 99.6%.
+
+Finally, in the last part I use this model to predict the test values for submission. After submission I realized it made a 20/20 prediction!
+
+```{r, eval=FALSE}
+intrain2 <- createDataPartition(y = train2$classe, p = 0.75, list = FALSE)
+mtrain <- train2[intrain2,] # Model train set
+mtest <- train2[-intrain2,] # Model test set
+
+myControl <- trainControl(method = "oob", number = 3)
+fit <- train(classe ~ ., data = mtrain, method ="rf", trControl = myControl)
+
+pred1 <- predict(fit, mtest)
+confusionMatrix(pred1,mtest$classe)
+sum(pred1 == train2$classe)/nrow(train2)
+pred2  <- predict(fit, test2)
+```
